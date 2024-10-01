@@ -15,6 +15,7 @@ library(data.table)
 library(ggplot2)
 library(purrr)
 library(lme4)
+library(lmerTest)
 library(effects)
 library(introdataviz) # split violin plots
 library(extrafont)
@@ -43,7 +44,7 @@ tides <- read.csv("2_Reference Data/Water/Griend/Wide/HLH/allYears-tidalPattern-
            tideID = as.numeric(sub("_", "", tideID)),
            high_start_time = as.POSIXct(high_start_time),
            date = as.Date(high_start_time, tz="UTC"),
-           month = month(high_start_time)) %>%     #allert saved dates on the files in CET (I think) so need to change this.  
+           month = month(high_start_time)) %>%      
     left_join(SA, by = c("low_level"="waterlevel")) %>% #space available in the tide
     left_join(waterdn, by="tideID") %>% 
     filter(month>=9, tod_summary!="twilight" & start_tod == tod_summary) %>% #choose only after September and when start time of day is the same as majority (not twilight)
@@ -120,12 +121,11 @@ duration_df[duration_df$inout == "outgoing",]$inout <- "ebb"
 
 p1 <- ggplot(data= duration_df)+
   geom_split_violin(aes(y = duration_min, x = inout, fill=tod_start))+
-  scale_fill_manual(values=c("orange","grey15"))+
+  scale_fill_manual(values=c("orange","grey25"))+
   scale_y_continuous(expand=c(0,0), limits = c(0,80), name = "duration (mins)")+
   scale_x_discrete(name = "tidal direction")+
   theme_classic()+
-  theme(legend.position="none",
-        text = element_text(size=22)) #poster size
+  theme(legend.position="none")#, text = element_text(size=22)) #poster size
 p1
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -154,16 +154,15 @@ furth_df$furthest_patch <- predict(model_furth, newdata=furth_df,type="response"
 furth_df$low_level <- furth_df$low_level_scaled + mean(bird_tides$low_level)
 
 p2 <- ggplot(data = bird_tides, aes(x=low_level, y = furthest_patch/1000, col = tide_tod))+
-    geom_point(alpha = 0.9, pch = 4)+
-    geom_abline(intercept = intercept_day/1000, slope = slope/1000, col = "orange", linewidth = 1)+
-    geom_abline(intercept = intercept_night/1000, slope = slope/1000, col = "grey15", linewidth = 1)+
-    scale_fill_manual(values=c("orange","grey15"))+
-    scale_color_manual(values=c("orange","grey15"))+
+    geom_point(alpha = 0.9, pch = 4, size=0.7)+
+    geom_abline(intercept = intercept_day/1000, slope = slope/1000, col = "orange", linewidth = 0.7)+
+    geom_abline(intercept = intercept_night/1000, slope = slope/1000, col = "grey25", linewidth = 0.7)+
+    scale_fill_manual(values=c("orange","grey25"))+
+    scale_color_manual(values=c("orange","grey25"))+
     scale_y_continuous(expand=c(0,0), limits = c(0,6.2), name = "furthest patch from Griend (km)")+
     scale_x_continuous(expand=c(0,0), limits = c(-145,25), name = "lowest tide level (NAP)")+
     theme_classic()+
-  theme(legend.position="none",
-        text = element_text(size=22)) #poster size
+  theme(legend.position="none")#, text = element_text(size=22)) #poster size
 p2
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -271,7 +270,7 @@ sd(area_df[area_df$tide_tod=="day",]$area_pred)
 #raw data
 # p3 <- ggplot(data = area_ptide, aes(x=tide_tod, y = area_ptide, fill = tide_tod))+
 #     geom_boxplot(notch=T)+
-#     scale_fill_manual(values = c("orange","grey15"))+
+#     scale_fill_manual(values = c("orange","grey25"))+
 #     scale_x_discrete(name = "time of day")+
 #     scale_y_continuous(limits = c(0,1.05), expand = c(0,0), name = "area covered per tide (km2)")+
 #     theme_classic()+
@@ -280,13 +279,12 @@ sd(area_df[area_df$tide_tod=="day",]$area_pred)
 #predicted data
 p3 <- ggplot(data = area_df, aes(x=tide_tod, y = area_pred, fill = tide_tod))+
     #geom_point(data = area_ptide, aes(x=tide_tod, y = area_ptide, fill = tide_tod), position = position_jitter(0.25), alpha = 0.1)+
-    geom_boxplot(notch=T)+
-    scale_fill_manual(values = c("orange","grey15"))+
+    geom_boxplot(outlier.shape= 4, notch=T)+
+    scale_fill_manual(values = c("orange","grey25"))+
     scale_x_discrete(name = "time")+
     scale_y_continuous(limits = c(0,0.55), expand = c(0,0), name = expression(paste("area covered per tide (km"^~~2, ")")))+
     theme_classic()+
-  theme(legend.position="none",
-        text = element_text(size=22)) #poster size
+  theme(legend.position="none")#, text = element_text(size=22)) #poster size
 
 
 p3 
@@ -318,22 +316,29 @@ overlap <- st_read("F:/OneDrive - Liverpool John Moores University/Synced files/
            intersection = NULL) %>% 
     as.data.frame()
 
-#mean total space use (night)
+
+#mean total space use at night km2
 mean(overlap$area_night)
 sd(overlap$area_night)
-#summary(overlap$area_night)
+
+#mean number of tides at night per bird
 mean(overlap$num_tides_night)
 sd(overlap$num_tides_night)
 
-#mean total space use (day)
+#mean total space use in day km2
 mean(overlap$area_day)
 sd(overlap$area_day)
-#summary(overlap$area_day)
+
+#mean number of tides in day per bird
 mean(overlap$num_tides_day)
 sd(overlap$num_tides_day)
 
+#mean percentage overlap of day tide with night tide space
 mean(overlap$pc_overlap_day)
 sd(overlap$pc_overlap_day)
+
+#mean percentage overlap of night tide with day tide space
+mean(overlap$pc_overlap_night)
 sd(overlap$pc_overlap_night)
 
 #plot for individuals
@@ -346,12 +351,11 @@ overlap_long <- overlap %>%
 
 p4 <- ggplot(overlap_long, aes(x = nonoverlap, fill = time))+
     geom_density(alpha = 0.6)+
-    scale_fill_manual(values=c("orange","grey15"))+
+    scale_fill_manual(values=c("orange","grey25"))+
     scale_x_continuous(limits = c(0,100), name = "overlap (%)")+
     scale_y_continuous(expand=c(0,0), limits = c(0,0.065))+
     theme_classic()+
-  theme(legend.position="none",
-        text = element_text(size=22)) #poster size
+  theme(legend.position="none")#,text = element_text(size=22)) #poster size
 
 p4
 
@@ -431,26 +435,25 @@ newdf1$revisits_prob <- predict(m_revisits1,newdata=newdf1,type="response")
 summary_df$revisits_pc <- summary_df$visited2_cells/summary_df$visited1_cells
 
 p5 <- ggplot()+
-    geom_boxplot(data= newdf1, aes(x= tide_tod, y = revisits_prob, fill = tide_tod), col="black", notch=T)+
+    geom_boxplot(data= newdf1, aes(x= tide_tod, y = revisits_prob, fill = tide_tod), outlier.shape= 4, col="black", notch=T)+
     #geom_point(data= summary_df, aes(x= tide_tod, y = revisits_pc, fill = tide_tod), alpha=0.9, col="black",position = position_jitter(0.3))+
-    scale_fill_manual(values=c("orange","grey15"))+
+    scale_fill_manual(values=c("orange","grey25"))+
     scale_y_continuous(limits = c(0,0.5), expand = c(0,0), name = "revisit probability")+
     scale_x_discrete(name = "time")+
     theme_classic()+
-    theme(legend.position="none",
-          text = element_text(size=22)) #poster size
+    theme(legend.position="none")# ,text = element_text(size=22)) #poster size
 
 p5
 
 legend <- get_legend(p1 + theme(legend.position="top", legend.title = element_blank()))
 
 
-r1 <- plot_grid(p1,p2, rel_widths = c(1,2), labels = c("a","b"), label_size=20)
-r2<- plot_grid(p3,p4,p5, labels=c("c","d", "e"), nrow=1, label_size=20)
-plot_all<- plot_grid(legend, r1, r2, nrow=3, rel_heights = c(0.1,1,1))
+r1 <- plot_grid(p1,p2, rel_widths = c(1,2), labels = c("a","b"))#, label_size=20)
+r2<- plot_grid(p3,p4,p5, labels=c("c","d", "e"), nrow=1)#, label_size=20)
+plot_all<- plot_grid(legend, r1, r2, nrow=3, rel_heights = c(0.1,1,1), label_x=-0.5)
 
 plot_all
-#ggsave("F:\\OneDrive - Liverpool John Moores University\\Synced files\\Projects\\1_NIOZ projects\\2_DayNight\\figures\\fig_2.png", plot_all,units="cm", height=30, width =40, dpi = 600)
+#ggsave("F:\\OneDrive - Liverpool John Moores University\\Synced files\\Projects\\1_NIOZ projects\\2_DayNight\\figures\\fig_2.png", plot_all,units="cm", height=16, width =16, dpi = 600)
 
 #### For supplementary ####
 #different thresholds for site fidelity
@@ -488,13 +491,18 @@ realdf <- rbind(data.frame(revisits = 1, summary_df[,c("tide_tod", "id", "year")
 newdf2 <- merge(newdf, realdf, by = c("revisits", "tide_tod", "id", "year"))
 newdf2$revisits = factor(newdf$revisits)
 
-
-
-ggplot()+
-    geom_boxplot(data= newdf2, aes(x= revisits, y = revisits_prob, fill = tide_tod), col="black", notch=T)+
-    scale_fill_manual(values=c("orange","grey15"))+
+S1 <- ggplot()+
+    geom_boxplot(data= newdf2, aes(x= revisits, y = revisits_prob, fill = tide_tod), col="black", outlier.shape= 4, notch=T)+
+    labs(x= "minimum number of revisits", y ="revisit probability", fill = "")+
+    scale_fill_manual(values=c("orange","grey25"))+
     scale_color_manual(values=c("black", "black"))+
-    theme_bw()
+    scale_size_manual(0.5)+
+    theme_bw() +
+    facet_grid(cols = vars(year))
+
+S1
+
+ggsave("F:\\OneDrive - Liverpool John Moores University\\Synced files\\Projects\\1_NIOZ projects\\2_DayNight\\figures\\fig_S1.png", S1,units="cm", height=13, width =16, dpi = 600)
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------#
 
