@@ -131,8 +131,7 @@ p1
 #----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-##### Question 2: Do red knots stay closer to Griend at night ####
-# If birds are more site faithful at night, are they going further out during the day? Base this on elevation or distance to the centre of griend????
+##### Question 2: Do red knots stay closer to Griend at night ###
 
 bird_tides$low_level_scaled <- scale(bird_tides$low_level, center = T, scale = F) # center subtracts the mean, scale subtracts SD. Do this to make the intercept meaningful (the mean low tide) for the table
 scale_c <- attributes(bird_tides$low_level_scaled)$`scaled:center`
@@ -422,7 +421,7 @@ m_revisits1 <- glmer(cbind(visited2_cells, visited1_cells - visited2_cells) ~ ti
 summary(m_revisits1)
 plot(m_revisits1)
 
-plot(effect("tide_tod", m_revisits1))
+#plot(effect("tide_tod", m_revisits1))
 
 newdf1 <- data.frame(revisits = 1, 
                      summary_df[,c("tide_tod", "id", "year")],
@@ -465,17 +464,17 @@ m_revisits4 <- glmer(cbind(visited5_cells, visited1_cells - visited5_cells) ~ ti
 newdf2 <- data.frame(revisits = 2, 
                      summary_df[,c("tide_tod", "id", "year")],
                      n_tides = mean(summary_df$n_tides))
-newdf2$revisits_log <- predict(m_revisits2,newdata=newdf2,type="response")
+newdf2$revisits_prob <- predict(m_revisits2,newdata=newdf2,type="response")
 
 newdf3 <- data.frame(revisits = 3, 
                      summary_df[,c("tide_tod", "id", "year")],
                      n_tides = mean(summary_df$n_tides))
-newdf3$revisits_log <- predict(m_revisits3,newdata=newdf3,type="response")
+newdf3$revisits_prob <- predict(m_revisits3,newdata=newdf3,type="response")
 
 newdf4 <- data.frame(revisits = 4, 
                      summary_df[,c("tide_tod", "id", "year")],
                      n_tides = mean(summary_df$n_tides))
-newdf4$revisits_log <- predict(m_revisits4,newdata=newdf4,type="response")
+newdf4$revisits_prob <- predict(m_revisits4,newdata=newdf4,type="response")
 
 
 newdf <- rbind(newdf1, newdf2, newdf3,newdf4)
@@ -492,13 +491,10 @@ newdf2$revisits = factor(newdf$revisits)
 
 
 ggplot()+
-  #  geom_split_violin(data= newdf2, aes(x= revisits, y = revisits_log, fill = tide_tod, col = tide_tod))+
-    geom_boxplot(data= newdf1, aes(x= tide_tod, y = revisits_prob, fill = tide_tod), col="black", notch=T)+
-    #geom_point(data= newdf2, aes(x= revisits, y = revisits_log, fill = tide_tod), pch = 19, alpha = 0.9, position = position_jitterdodge(dodge.width = 0.75))+
+    geom_boxplot(data= newdf2, aes(x= revisits, y = revisits_prob, fill = tide_tod), col="black", notch=T)+
     scale_fill_manual(values=c("orange","grey15"))+
     scale_color_manual(values=c("black", "black"))+
-    theme_bw()#+
-   # facet_grid(cols = vars(year))
+    theme_bw()
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------#
 
