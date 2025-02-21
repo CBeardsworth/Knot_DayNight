@@ -1,5 +1,5 @@
 # Repository for: Knots in the night: high-throughput tracking reveals differences in low-tide space use between day and night in wintering red knot
-[![DOI](https://zenodo.org/badge/865334283.svg)](https://doi.org/10.5281/zenodo.13869874)
+[![DOI](https://zenodo.org/badge/865334283.svg)](https://doi.org/10.5281/zenodo.13869873)
 
 
 This paper is currently under review and we have posted code for the reviewers access only.
